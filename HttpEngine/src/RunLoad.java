@@ -3,20 +3,26 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.*;
 import java.io.*;
 
-public class RunLoad {
+public abstract class RunLoad {
 	Properties task_prop = null;
 	Future[] fs = null;
 	private ExecutorService es;
-	protected static Logger logger = Logger.getLogger("task");
+	private boolean exitFlag = false;
+	protected Logger logger;
 	
 	public RunLoad(){
 		
+	}
+	
+	void setLogger(Logger logger){
+		this.logger = logger;
 	}
 	
 	protected void setTask_prop(Properties prop) {
@@ -83,6 +89,9 @@ public class RunLoad {
 
 		return time;
 	}
+	
+	public abstract void doTask();
+	
 	public void startLoad(){
 		String tester = strParameter("tester");
 		System.out.println(tester);
@@ -94,14 +103,21 @@ public class RunLoad {
 		if(testTime > 0){
 			timer = new Thread(){
 				public void run() {
+					System.out.println("timer thread started");
 					try {
+						int count =0;
 						for (int i = 0; i < 10; i++) {
-							Thread.sleep(testTime * 100L);
+							System.out.println("i:"+i);
+				//			Thread.sleep(testTime * 100L);
+							TimeUnit.SECONDS.sleep(testTime * 100);
+							count++;
+							System.out.println("second:"+count);
 						}
 						stopLoad();
 					} catch (InterruptedException e) {
-						System.err.println("Test Duration Timer was stopped in force");
-						return;
+						e.printStackTrace();
+					//	System.err.println("Test Duration Timer was stopped in force");
+					//	return;
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -119,7 +135,7 @@ public class RunLoad {
 			Runnable r = new Runnable() {
 				public void run() {
 					System.out.println("Start Thread "+threadId);
-		//			doTask();
+					doTask();
 				}
 			};
 			try {
@@ -132,7 +148,7 @@ public class RunLoad {
 				try {
 					Thread.sleep(rampup / numThread * 1000L);
 				} catch (Exception e) {
-					
+					e.printStackTrace();
 				}
 			}
 		}
@@ -155,34 +171,43 @@ public class RunLoad {
 
 	}
 	public void stopLoad(){
-		
-	}
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-  
-		Properties prop = new Properties();  
-		RunLoad load = new RunLoad();
-		try {
-			FileHandler handler = new FileHandler("./HttpEngine/test.log");
-			handler.setLevel(Level.INFO);
-			logger.addHandler(handler);
-		} catch (SecurityException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+		System.out.println("stop");
+		exitFlag =  true;
+		int p = 0;
+		if(fs != null){
+			for(Future ft:fs){
+				logger.info("Force stopping task "+(++p));
+				ft.cancel(true);
+			}
 		}
-	    FileInputStream fis = null;
-		try {
-			fis = new FileInputStream("./HttpEngine/sample.properties");
-			prop.load(fis);
-			load.setTask_prop(prop);		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}  
-		load.startLoad();
 	}
+	
+//	public static void main(String[] args) {
+//		// TODO Auto-generated method stub
+//  
+//		Properties prop = new Properties();  
+//		RunLoad load = new RunLoad();
+//		try {
+//			FileHandler handler = new FileHandler("./HttpEngine/test.log");
+//			handler.setLevel(Level.INFO);
+//			logger.addHandler(handler);
+//		} catch (SecurityException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		} catch (IOException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
+//	    FileInputStream fis = null;
+//		try {
+//			fis = new FileInputStream("./HttpEngine/sample.properties");
+//			prop.load(fis);
+//			load.setTask_prop(prop);		
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}  
+//		load.startLoad();
+//	}
 
 }
