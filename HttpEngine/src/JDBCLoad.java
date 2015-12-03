@@ -22,29 +22,37 @@ public class JDBCLoad extends RunLoad {
 //		System.out.println("run into do task");
 		// TODO Auto-generated method stub
 		if(ds != null){
-			try {
-//				System.out.println("getting a connection");
-				
-				Connection conn = ds.getConnection();
-				Statement stmt = conn.createStatement();
-				long start = new Date().getTime();
-//				System.out.println("executing query");
-				ResultSet st = stmt.executeQuery("select table_name from user_tables");
-				int count = 0;
-				int size = st.getFetchSize();
-				while(st.next()){
-					count++;
+			while(true){
+				try {
+	//				System.out.println("getting a connection");
+					
+					Connection conn = ds.getConnection();
+					Statement stmt = conn.createStatement();
+					long start = new Date().getTime();
+	//				System.out.println("executing query");
+					ResultSet st = stmt.executeQuery("select * from largeTable");
+					int count = 0;
+					while(st.next()){
+						count++;
+					}
+					long end = new Date().getTime();
+	//				System.out.println("count:"+count);
+	//				System.out.println("fetchsize:"+ size);
+					System.out.println("end : "+end+" - start-- "+start);
+					System.out.println("uptime:"+(end-start)/100);
+					st.close();
+					stmt.close();
+					conn.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
-				long end = new Date().getTime();
-//				System.out.println("count:"+count);
-//				System.out.println("fetchsize:"+ size);
-//				System.out.println("uptime:"+(end-start)/1000);
-				st.close();
-				stmt.close();
-				conn.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 		else{
@@ -65,10 +73,10 @@ public class JDBCLoad extends RunLoad {
 			pds.setURL("jdbc:oracle:thin:@//slc07imk.us.oracle.com:1521/orcl");
 			pds.setUser("nodejs");
 			pds.setPassword("nodejs");
-//			pds.setMinPoolSize(50);
-//			pds.setMaxPoolSize(300);
-//			pds.setInitialPoolSize(50);
-//			pds.setInactiveConnectionTimeout(10);
+			pds.setMinPoolSize(50);
+			pds.setMaxPoolSize(300);
+			pds.setInitialPoolSize(50);
+			pds.setInactiveConnectionTimeout(10);
 			ds = pds;
 			System.out.println("get data source");
 		} catch (Exception e) {

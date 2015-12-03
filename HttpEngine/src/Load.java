@@ -3,26 +3,66 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.*;
 import java.io.*;
 
-public abstract class RunLoad {
+
+
+public abstract class Load {
 	Properties task_prop = null;
+	String name = null;
+	int id = 0;
 	Future[] fs = null;
 	private ExecutorService es;
-	private boolean exitFlag = false;
-	protected Logger logger;
+	protected static Logger logger = Logger.getLogger("task");
 	
-	public RunLoad(){
-		
+	public Load(){
+		try {
+			FileHandler handler = new FileHandler("./test.log");
+			handler.setLevel(Level.INFO);			
+		} catch (SecurityException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 	}
 	
-	void setLogger(Logger logger){
-		this.logger = logger;
+	void initLoad(String loadName,Properties prop){
+		setName(loadName);
+		setId(Integer.parseInt(prop.getProperty(loadName)));
+		task_prop = new Properties();
+		String numThread = prop.getProperty(String.valueOf(getId())+".thread", String.valueOf(10));
+		task_prop.setProperty("thread", numThread);
+		String duration = prop.getProperty(String.valueOf(getId())+".thread", String.valueOf(10));
+		task_prop.setProperty("duration", duration);
+		String rampup = prop.getProperty(String.valueOf(getId())+".thread", String.valueOf(100));
+		task_prop.setProperty("rampup", rampup);
+		String minThink = prop.getProperty(String.valueOf(getId())+".thread", String.valueOf(1));
+		task_prop.setProperty("minThink", minThink);
+		String maxThink = prop.getProperty(String.valueOf(getId())+".thread", String.valueOf(10));
+		task_prop.setProperty("maxThink", maxThink);
+	}
+	
+	void setId(int id){
+		this.id=id;
+	}
+	int getId(){
+		return id;
+	}
+	
+	public abstract LoadResult doTask();
+	
+	void setName(String name){
+		this.name = name;
+	}
+	
+	String getName(){
+		return this.name;
 	}
 	
 	protected void setTask_prop(Properties prop) {
@@ -89,17 +129,9 @@ public abstract class RunLoad {
 
 		return time;
 	}
-	
-	public abstract void doTask();
-	
 	public void startLoad(){
 		String tester = strParameter("tester");
-		System.out.println(tester);
-		int rampup = intParameter("rampup");
-		int numThread = intParameter("thread");
-		System.out.println(numThread);
-		fs = new Future[numThread];
-		es = Executors.newFixedThreadPool(numThread);
+		logger.info(tester);
 		
 		String duration = strParameter("duration");
 		final long testTime = convertDuration(duration);
@@ -108,17 +140,14 @@ public abstract class RunLoad {
 		if(testTime > 0){
 			timer = new Thread(){
 				public void run() {
-					System.out.println("timer thread started");
 					try {
 						for (int i = 0; i < 10; i++) {
 							Thread.sleep(testTime * 100L);
-				//			TimeUnit.SECONDS.sleep(testTime * 100L);
 						}
 						stopLoad();
 					} catch (InterruptedException e) {
-						e.printStackTrace();
-					//	System.err.println("Test Duration Timer was stopped in force");
-					//	return;
+						System.err.println("Test Duration Timer was stopped in force");
+						return;
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -126,8 +155,11 @@ public abstract class RunLoad {
 			};
 			timer.start();
 		}
-
-		
+		int rampup = intParameter("rampup");
+		int numThread = intParameter("thread");
+		System.out.println(numThread);
+		fs = new Future[numThread];
+		es = Executors.newFixedThreadPool(numThread);
 		for (int i = 1; i <= numThread; i++) {
 			final String threadId = "T" + i;
 			Runnable r = new Runnable() {
@@ -137,45 +169,39 @@ public abstract class RunLoad {
 				}
 			};
 			try {
-
 				fs[i - 1] = es.submit(r);
 			} catch (RejectedExecutionException e) {
-				e.printStackTrace();
+				
 				break;
 			}
 			if (rampup > 0 && numThread > 1 && numThread != i) {
 				try {
-
 					Thread.sleep(rampup / numThread * 1000L);
 				} catch (Exception e) {
-					e.printStackTrace();
+					
 				}
 			}
 		}
 		for (int i = 0; i < numThread; i++) {
 			try {
-				if (fs[i] != null && !fs[i].isCancelled() && !fs[i].isDone()) {
-					
+				if (fs[i] != null && !fs[i].isCancelled()
+						&& !fs[i].isDone()) {
 					fs[i].get();
-					System.out.println(fs[i].toString());
 				}
-
 			} catch (Exception e) {
-				e.printStackTrace();
+				
 			}
 		}
-//		if (timer != null) {
-//			timer.interrupt();
-//		}
+		if (timer != null) {
+			timer.interrupt();
+		}
 		if (!es.isShutdown() || !es.isTerminated()) {
-			
 			es.shutdownNow();
 		}
 
 	}
+	
 	public void stopLoad(){
-		System.out.println("stop");
-		exitFlag =  true;
 		int p = 0;
 		if(fs != null){
 			for(Future ft:fs){
@@ -184,33 +210,4 @@ public abstract class RunLoad {
 			}
 		}
 	}
-	
-//	public static void main(String[] args) {
-//		// TODO Auto-generated method stub
-//  
-//		Properties prop = new Properties();  
-//		RunLoad load = new RunLoad();
-//		try {
-//			FileHandler handler = new FileHandler("./HttpEngine/test.log");
-//			handler.setLevel(Level.INFO);
-//			logger.addHandler(handler);
-//		} catch (SecurityException e1) {
-//			// TODO Auto-generated catch block
-//			e1.printStackTrace();
-//		} catch (IOException e1) {
-//			// TODO Auto-generated catch block
-//			e1.printStackTrace();
-//		}
-//	    FileInputStream fis = null;
-//		try {
-//			fis = new FileInputStream("./HttpEngine/sample.properties");
-//			prop.load(fis);
-//			load.setTask_prop(prop);		
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}  
-//		load.startLoad();
-//	}
-
 }

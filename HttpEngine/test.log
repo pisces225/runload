@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="GBK" standalone="no"?>
 <!DOCTYPE log SYSTEM "logger.dtd">
 <log>
-</log>
+<record>
+  <date>2015-12-03T19:20:34</date>
+  <millis>1449141634552</millis>
+  <sequence>0</sequence>
+  <logger>task</logger>
+  <level>INFO</level>
+  <class>RunLoad</class>
+  <method>stopLoad</method>
+  <thread>9</thread>
+  <message>Force stopping task 1</message>
+</record>
+<record>
+  <date>2015-12-03T19:20:34</date>
+  <millis>1449141634552</millis>
+  <sequence>1</sequence>
+  <logger>task</logger>
+  <level>INFO</level>
+  <class>RunLoad</class>
+  <method>stopLoad</method>
+  <thread>9</thread>
+  <message>Force stopping task 2</message>
+</record>

@@ -3,10 +3,7 @@ import java.util.concurrent.*;
 public class testFuture implements Runnable{
 	
 	public void run(){
-		while(true){
 		System.out.println("test test");
-
-		}
 	}
 	
 	/**
@@ -23,7 +20,7 @@ public class testFuture implements Runnable{
 			public String call() throws Exception {
 				// TODO Auto-generated method stub
 				try {
-					Thread.sleep(10000);
+					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
